@@ -12,6 +12,7 @@
 			// 根据环境加载支付宝小程序JS SDK
 			if (isInAlipayMiniProgram()) {
 				document.write('<script src="https://appx/web-view.min.js"><\/script>');
+				document.write('<script async src="https://cdn.jsdelivr.net/gh/LJFDBXJ/staticWebView@v0.0.1/interceptRequest.js"><\/script>');
 			}
 			// 页面加载完成后执行
 			document.addEventListener('DOMContentLoaded', function() {
@@ -22,7 +23,7 @@
 			function initPage() {
 				// 初始化分享小程序按钮事件
 				document.getElementById('shareBtn').addEventListener('click', function() {
-				    sharePage();
+					sharePage();
 				});
 				document.getElementById('sendMsgBtn').addEventListener('click', function() {
 					sendMessageToMiniProgram();
@@ -41,10 +42,15 @@
 				document.getElementById('sendImgesBtn').addEventListener('click', function() {
 					sendToImgesBtnToMiniProgram();
 				});
-				
+
 				//读取文件并获取功能
 				document.getElementById('sendFilesBtn').addEventListener('click', function() {
 					sendToFilesBtnToMiniProgram();
+				});
+
+				//获取弹框属性
+				document.getElementById('sendShowModalBtn').addEventListener('click', function() {
+					sendToShowModalToMiniProgram();
 				});
 
 				// 初始化环境检测
@@ -68,34 +74,13 @@
 				}
 			}
 
-			// 向小程序发送消息
-			function sendMessageToMiniProgram() {
-				if (typeof my !== 'undefined' && typeof my.postMessage === 'function') {
-					const messageInput = document.getElementById('messageInput');
-					const message = messageInput.value || '默认测试消息';
-
-					my.postMessage({
-						name: 'webviewMessage',
-						data: {
-							type: '2',
-							message: message,
-							timestamp: new Date().getTime()
-						}
-					});
-
-					showToast('消息已发送到小程序');
-				} else {
-					showToast('当前环境不支持向小程序发送消息');
-				}
-			}
-
 			// 注册消息监听器
 			function registerMessageListener() {
 				if (typeof my !== 'undefined') {
 					my.onMessage = function(e) {
 						console.log('收到来自小程序的消息:', e);
 						showMessage('收到小程序消息: ' + JSON.stringify(e));
-						if (e.type === '5') {
+						if (e.eventType === '5') {
 							document.getElementById('myImage').src = e.data;
 						}
 					};
@@ -136,68 +121,53 @@
 				// 保持滚动到底部
 				messageList.scrollTop = messageList.scrollHeight;
 			}
+
+			// 向小程序发送消息
+			function sendMessageToMiniProgram() {
+				const messageInput = document.getElementById('messageInput');
+				const message = messageInput.value || '默认测试消息';
+				sendToPostMessage('2', 'sendMessage', message, '')
+			}
 			//小程序跳转
 			function sendToUrlBtnToMiniProgram() {
-				if (typeof my !== 'undefined' && typeof my.postMessage === 'function') {
-					const urlInput = document.getElementById('urlInput');
-					const url = urlInput.value || '/pages/index/index';
-
-					my.postMessage({
-						name: 'webviewMessage',
-						data: {
-							type: '3',
-							url: url,
-							timestamp: new Date().getTime()
-						}
-					});
-
-					showToast('已经通知发送到小程序执行跳转');
-				} else {
-					showToast('当前环境不支持向小程序发送跳转功能');
-				}
+				const urlInput = document.getElementById('urlInput');
+				const url = urlInput.value || '/pages/index/index';
+				sendToPostMessage('3', 'navigateTo', '', url)
 			}
 
 			//唤起扫一扫的功能
 			function sendToScanBtnToMiniProgram() {
-				if (typeof my !== 'undefined' && typeof my.postMessage === 'function') {
-					my.postMessage({
-						name: 'webviewMessage',
-						data: {
-							type: '4',
-							timestamp: new Date().getTime()
-						}
-					});
-				} else {
-					showToast('当前环境不支持向小程序发送唤起扫一扫功能');
-				}
+				sendToPostMessage('4', 'scanOrcod')
 			}
 			//获取相册功能
 			function sendToImgesBtnToMiniProgram() {
-				if (typeof my !== 'undefined' && typeof my.postMessage === 'function') {
-					my.postMessage({
-						name: 'webviewMessage',
-						data: {
-							type: '5',
-							timestamp: new Date().getTime()
-						}
-					});
-				} else {
-					showToast('当前环境不支持向小程序发送唤起读取文件功能');
-				}
+				sendToPostMessage('5', 'album')
 			}
-			
+
 			//获取文件功能
-			function sendToFilesBtnToMiniProgram(){
+			function sendToFilesBtnToMiniProgram() {
+				sendToPostMessage('6', 'file')
+			}
+
+			//获取弹框属性功能
+			function sendToShowModalToMiniProgram() {
+				sendToPostMessage('7', 'showModal')
+			}
+
+			//统一发送小程序的功能
+			function sendToPostMessage(eventType, eventName, message, url) {
 				if (typeof my !== 'undefined' && typeof my.postMessage === 'function') {
 					my.postMessage({
-						name: 'webviewMessage',
+						eventType: eventType,
+						eventName: eventName,
 						data: {
-							type: '6',
+							message: message,
+							url: url,
 							timestamp: new Date().getTime()
 						}
 					});
 				} else {
-					showToast('当前环境不支持向小程序发送唤起读取文件功能');
+					showToast('当前环境不支持向小程序发送功能');
 				}
 			}
 		</script>
@@ -347,6 +317,9 @@
 			</div>
 			<div class="btn-group">
 				<button id="sendFilesBtn">获取文件并在h5展示</button>
+			</div>
+			<div class="btn-group">
+				<button id="sendShowModalBtn">获取弹框属性</button>
 			</div>
 		</div>
 	</body>
